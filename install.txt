@@ -1,0 +1,231 @@
+下载
+apt-get install zookeeperd
+service zookeeper start
+
+
+安装docker  in  Ubuntu
+https://docs.docker.com/engine/installation/linux/docker-ce/ubuntu/
+
+Ubuntu 14.04
+apt-get update
+apt-get install -y openjdk-7-jdk  tar wget git   autoconf libtool
+apt-get -y install build-essential python-dev python-virtualenv libcurl4-nss-dev libsasl2-dev libsasl2-modules maven libapr1-dev libsvn-dev
+
+
+
+
+Ubuntu 16.04
+apt-get update
+apt-get install -y tar wget git  openjdk-8-jdk autoconf libtool build-essential python-dev python-virtualenv libcurl4-nss-dev libsasl2-dev libsasl2-modules maven libapr1-dev libsvn-dev zlib1g-dev  
+
+
+
+wget -S "http://downloads.mesosphere.com/marathon/v1.4.0/marathon-1.4.0.tgz"
+wget http://www.apache.org/dist/mesos/1.2.0/mesos-1.2.0.tar.gz
+cd mesos-1.2.0/
+mkdir build
+cd build/
+../configure && make && make check && make install 
+make install
+
+
+
+启动
+nohup /root/mesos-1.2.0/build/bin/mesos-master.sh --ip=192.168.30.186 --zk=zk://192.168.30.186:2181/mesos --quorum=1 --work_dir=/data1/mesos1/ --external_log_file=/data1/mesos1/log --cluster=xcluster  &
+nohup /root/marathon-1.4.0/bin/start  --master zk://192.168.30.186:2181/mesos  --zk zk://192.168.30.186:2181/marathon  &
+
+
+nohup /root/mesos-1.2.0/build/bin/mesos-slave.sh   --master=zk://192.168.30.186:2181/mesos  --containerizers=mesos,docker  --hostname=docker187 --ip=192.168.30.187 --work_dir=/data1/mesos_slave1/  &
+nohup /root/mesos-1.2.0/build/bin/mesos-slave.sh   --master=zk://192.168.30.186:2181/mesos  --containerizers=mesos,docker  --hostname=docker188 --ip=192.168.30.188 --work_dir=/data1/mesos_slave1/  &
+
+
+
+
+ip link set dev docker_gwbridge down
+brctl delbr docker_gwbridge
+
+
+1.sh
+ufw disable
+brctl addbr bridge0
+ip addr add 172.16.187.0/24 dev bridge0
+ip link set dev bridge0 up
+service docker start
+
+2.sh
+for i in `docker ps -a  |awk '{print $1}' `; do  docker rm -v $i ; done
+
+
+
+
+
+
+
+apt-get install libpcre3 libpcre3-dev libssl-dev zlib1g-dev
+tar -xvf openresty-VERSION.tar.gz
+cd openresty-VERSION/
+./configure -j2
+./configure --prefix=/usr/local/openresty  --add-module=../ngx_dynamic_upstream/  -–with-http_stub_status_module
+make -j2
+sudo make install
+
+apt-get install bridge-utils -y
+
+修改/etc/default/docker
+
+
+------------------------
+-- install docker --
+------------------------
+ubuntu:
+https://docs.docker.com/engine/installation/linux/docker-ce/ubuntu/#install-using-the-repository
+
+
+-------------------------
+-- calico --
+-------------------------
+
+docker load -i /tmp/node.tar
+docker images
+docker tag 471eaf511532  calico/node:v0.22.0 
+docker images
+docker load -i /tmp/nodelib.tar
+docker images
+docker tag ed7dc1e28c86   calico/node-libnetwork:v0.9.0 
+docker images
+
+curl -o /usr/bin/calicoctl -L https://github.com/projectcalico/calico-containers/releases/download/v0.22.0/calicoctl
+
+ETCD_AUTHORITY=192.168.30.186:2379 calicoctl node --libnetwork
+
+calicoctl node --libnetwork  --ip=192.168.8.217
+
+=====================================================================
+Docker 配置文件配置无效 /etc/default/docker
+解决办法是：打开/lib/systemd/system/docker.service 文件 
+添加一行
+
+EnvironmentFile=-/etc/default/docker
+-代表ignore error
+并修改
+
+ExecStart=/usr/bin/docker daemon -H fd://
+改成
+
+ExecStart=/usr/bin/docker daemon -H fd:// $DOCKER_OPTS
+这样才可以使用/etc/default/docker 里定义的DOCKER_OPTS参数
+
+systemctl daemon-reload 重载
+======================================================================
+
+
+
+docker stop calico-libnetwork   calico-node
+docker rm -v calico-libnetwork   calico-node
+ETCD_AUTHORITY=etcd:2379 calicoctl node --libnetwork  
+calicoctl pool add  172.16.0.0/24  --nat-outgoing
+docker network create --driver=calico --ipam-driver=calico  xlnet
+#docker network create --driver=calico --ipam-driver=calico  --subnet=172.16.0.2/24 xlnet
+calicoctl profile xlnet rule add inbound allow
+
+
+
+
+
+docker network create --driver=calico --ipam-driver=calico xlnet
+calicoctl profile xlnet rule show
+calicoctl profile xlnet rule add inbound allow
+calicoctl profile xlnet rule show
+
+calicoctl status
+calicoctl pool show
+
+ETCD_AUTHORITY=192.168.30.186:2379 calicoctl node --libnetwork  
+ 
+https://s.click.taobao.com/PjUoMdw
+
+
+docker network remove xlnet
+calicoctl pool show
+calicoctl pool add 172.16.0.0/24 --nat-outgoing
+docker network create --driver=calico --ipam-driver=calico  --subnet=172.16.0.2/24   xlnet 
+docker network inspect xlnet
+calicoctl profile xlnet rule add inbound allow
+
+docker network ls
+calicoctl profile show
+
+calicoctl profile xltest2 rule add outbound --at=1 deny tcp to cidr 192.168.8.0/24
+calicoctl profile xltest2 rule add outbound --at=1 deny icmp to cidr 192.168.8.0/24 
+calicoctl profile xltest2 rule show
+  
+  
+  
+    "docker": {
+      "image": "java:v1.0",
+      "network": "USER",
+      "privileged": true,
+      "parameters": [],
+      "forcePullImage": false
+    }
+  },
+  "ipAddress": {
+      "networkName": "xlnet"
+  },
+  
+  
+------------------
+--- 时区修改
+
+ cp    /usr/share/zoneinfo/Asia/Shanghai    /etc/localtime
+  
+---------------------------------------------
+--- supervisor
+---------------------------------------------
+apt-get install supervisor -y
+
+
+cat /etc/supervisor/conf.d/mesos-agent.conf 
+[program:mesos-agent]
+command=/usr/local/mesos/bin/mesos-slave.sh   --master=zk://mesos-155:2181,mesos-217:2181,mesos-218:2181/mesos  --containerizers=mesos,docker  --hostname=mesos-123 --ip=192.168.8.123 --work_dir=/data/mesos_slave/ ;
+stdout_logfile=/data/mesos_slave/mesos_start.log ;
+stderr_logfile=/data/mesos_slave/mesos_error.log ;
+autostart=true ;
+autorestart=true ;
+startsecs=10 ;
+
+
+supervisorctl reread
+supervisorctl update 
+
+
+------------------------------------------
+--- glusterfs
+------------------------------------------
+add-apt-repository ppa:gluster/glusterfs-3.8
+apt-get update
+apt-get  install  glusterfs-client -y
+mount -t glusterfs  mesos-96:/nfsdata /mnt
+ 
+ 
+mkdir /shared
+add-apt-repository ppa:gluster/glusterfs-3.8
+apt-get update
+apt-get install glusterfs-server
+
+glusterfs --version
+gluster peer status
+gluster peer probe    mesos-85
+gluster  volume info
+gluster volume create ttt  replica 2 mesos-85:/shared mesos-190:/shared mesos-189:/shared mesos-196:/shared   force
+gluster volume create nfsdata  disperse 10 redundancy 5  mesos-82:/shared mesos-85:/shared mesos-190:/shared mesos-189:/shared mesos-196:/shared mesos-91:/shared  force
+
+gluster volume start  ttt
+mount -t glusterfs  mesos-82:/ttt /mnt
+
+gluster volume stop ttt
+gluster volume delete  ttt
+ 
+gluster pool list   
+gluster peer status
+gluster volume info

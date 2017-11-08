@@ -1,0 +1,75 @@
+{
+  "id": "/teachevalsrv/calico",
+  "cmd": "/etc/init.d/sshd start && /bin/bash && sh /sbin/start-jar.sh teacheval && while [ true ] ; do echo 'Hello Marathon' ; sleep 3600 ; done",
+  "cpus": 0.3,
+  "mem": 4096,
+  "disk": 0,
+  "instances": 1,
+  "acceptedResourceRoles": [
+    "*"
+  ],
+  "container": {
+    "type": "DOCKER",
+    "volumes": [
+      {
+        "containerPath": "/sbin/srv_chk.sh",
+        "hostPath": "/data/srv_chk.sh",
+        "mode": "RO"
+      },
+      {
+        "containerPath": "/root/.superdiamond",
+        "hostPath": "/data/.superdiamond",
+        "mode": "RW"
+      },
+      {
+        "containerPath": "/sbin/start-jar.sh",
+        "hostPath": "/data/start-jar.sh",
+        "mode": "RO"
+      },
+      {
+        "containerPath": "/etc/localtime",
+        "hostPath": "/etc/localtime",
+        "mode": "RO"
+      },
+      {
+        "containerPath": "/sbin/hosts",
+        "hostPath": "/data/hosts",
+        "mode": "RO"
+      },
+      {
+        "containerPath": "/usr/local/tomcat/teacheval-service.jar",
+        "hostPath": "/data/teacheval-service.jar",
+        "mode": "RO"
+      }
+    ],
+    "docker": {
+      "image": "java:v1.1",
+      "network": "USER",
+      "privileged": false,
+      "parameters": [
+        {
+          "key": "cap-add",
+          "value": "SYS_PTRACE"
+        }
+      ],
+      "forcePullImage": false
+    }
+  },
+  "killSelection":"OLDEST_FIRST",
+  "ipAddress": {
+    "networkName": "xlnet10"
+  },
+  "healthChecks": [
+    {
+      "gracePeriodSeconds": 90,
+      "intervalSeconds": 30,
+      "timeoutSeconds": 3,
+      "maxConsecutiveFailures": 3,
+      "command": {
+        "value": "srv_chk.sh 20891"
+      },
+      "protocol": "COMMAND",
+      "ignoreHttp1xx": false
+    }
+  ]
+}

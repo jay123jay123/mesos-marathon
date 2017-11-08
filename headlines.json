@@ -1,0 +1,72 @@
+{
+  "id": "/headlines/calico",
+  "cmd": "/etc/init.d/sshd start && /bin/bash && sh /sbin/start-pm2.sh   && while [ true ] ; do echo 'Hello Marathon' ; sleep 3600 ; done",
+  "cpus": 0.3,
+  "mem": 4096,
+  "disk": 0,
+  "instances": 1,
+  "acceptedResourceRoles": [
+    "*"
+  ],
+  "container": {
+    "type": "DOCKER",
+    "volumes": [
+      {
+        "containerPath": "/root/.superdiamond",
+        "hostPath": "/data/.superdiamond",
+        "mode": "RW"
+      },
+      {
+        "containerPath": "/etc/localtime",
+        "hostPath": "/etc/localtime",
+        "mode": "RO"
+      },
+      {
+        "containerPath": "/sbin/hosts",
+        "hostPath": "/data/hosts",
+        "mode": "RO"
+      },
+      {
+        "hostPath": "/data/start-pm2.sh",
+        "containerPath": "/sbin/start-pm2.sh",
+        "mode": "RO"
+      },
+      {
+        "hostPath": "/data/pm2_list.sh",
+        "containerPath": "/sbin/pm2_list.sh",
+        "mode": "RO"
+      },
+      {
+        "hostPath": "/data/headlines.tar.gz",
+        "containerPath": "/data/headlines.tar.gz",
+        "mode": "RO"
+      }
+    ],
+    "docker": {
+      "image": "node:v1.0",
+      "network": "USER",
+      "privileged": false,
+      "parameters": [],
+      "forcePullImage": false
+    }
+  },
+  "killSelection":"OLDEST_FIRST",
+  "ipAddress": {
+    "networkName": "xlnet10"
+  },
+  "env": {},
+  "healthChecks": [
+    {
+      "gracePeriodSeconds": 120,
+      "intervalSeconds": 30,
+      "timeoutSeconds": 3,
+      "maxConsecutiveFailures": 3,
+      "delaySeconds": 15,
+      "command": {
+        "value": "netstat -lntp |grep node |grep :9090"
+      },
+      "protocol": "COMMAND"
+    }
+  ],
+  "labels": {}
+}

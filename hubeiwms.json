@@ -1,0 +1,78 @@
+{
+  "id": "/hubeiwms/calico",
+  "cmd": "/etc/init.d/sshd start && /bin/bash && sh /sbin/start-war.sh && while [ true ] ; do echo 'Hello Marathon' ; sleep 3600 ; done",
+  "cpus": 0.3,
+  "mem": 4096,
+  "disk": 0,
+  "instances": 1,
+  "acceptedResourceRoles": [
+    "*"
+  ],
+  "container": {
+    "type": "DOCKER",
+    "volumes": [
+      {
+        "containerPath": "/root/.superdiamond",
+        "hostPath": "/data/.superdiamond",
+        "mode": "RW"
+      },
+      {
+        "containerPath": "/sbin/start-war.sh",
+        "hostPath": "/data/start-war.sh",
+        "mode": "RO"
+      },
+      {
+        "containerPath": "/etc/localtime",
+        "hostPath": "/etc/localtime",
+        "mode": "RO"
+      },
+      {
+        "containerPath": "/sbin/hosts",
+        "hostPath": "/data/hosts",
+        "mode": "RO"
+      },
+      {
+        "containerPath": "/usr/local/tomcat/webapps/hubeiwms.war",
+        "hostPath": "/data/hubeiwms.war",
+        "mode": "RO"
+      },
+      {
+        "containerPath": "/usr/local/tomcat/bin/catalina.sh",
+        "hostPath": "/data/catalina.sh",
+        "mode": "RO"
+      }
+    ],
+    "docker": {
+      "image": "tomcat:v1.1",
+      "network": "USER",
+      "privileged": false,
+      "parameters": [
+        {
+          "key": "cap-add",
+          "value": "SYS_PTRACE"
+        }
+      ],
+      "forcePullImage": false
+    }
+  },
+  "killSelection":"OLDEST_FIRST",
+  "ipAddress": {
+    "networkName": "xlnet10"
+  },
+  "env": {
+    "Proj": "member"
+  },
+  "healthChecks": [
+    {
+      "gracePeriodSeconds": 300,
+      "intervalSeconds": 60,
+      "timeoutSeconds": 20,
+      "maxConsecutiveFailures": 3,
+      "delaySeconds": 15,
+      "command": {
+        "value": "netstat -lntp |grep java |grep :8080"
+      },
+      "protocol": "COMMAND"
+    }
+  ]
+}
